@@ -1,0 +1,26 @@
+@startuml
+package DDS {
+   [VectorToMagnitude]
+   [Logger]
+}
+package DDS-XRCE{
+   [Agent]
+   [ClientOne]
+   [ClientTwo]
+   
+}
+[ClientOne] <--> [Agent]
+[ClientTwo] <--> [Agent]
+[Agent] <--> DDS
+
+note as clientOneRole
+     This client will publish acceleration vectors
+end note
+
+note as clientTwoRole
+     This client will listen for the magnitude vector
+end note
+
+[ClientOne] .. clientOneRole
+[ClientTwo] .. clientTwoRole
+@enduml

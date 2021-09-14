@@ -1,0 +1,3 @@
+struct VectorCustom {
+  sequence<float> value;
+};

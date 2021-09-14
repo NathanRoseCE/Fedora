@@ -1,0 +1,14 @@
+version: '3.7'
+
+services:
+  logger:
+    build: ./Logger
+    networks:
+      - DDS
+  vectorpublisher:
+    build: ./VectorPublisher
+    networks:
+      - DDS
+
+networks:
+  DDS:
