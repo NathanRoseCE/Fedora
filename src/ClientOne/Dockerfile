@@ -46,8 +46,8 @@ RUN /usr/src/ddsXrceGen/scripts/microxrceddsgen idl/*.idl -d ./messages/
 
 
 #Build the app
-# RUN cmake -B build .
-# RUN cd build && make install
+RUN cmake . -B build
+RUN cd build && make
 
 #RUN Command
 CMD ["./run.sh"]

@@ -51,7 +51,7 @@ public:
     _someVector(nullptr),
     _someVectorSubscriber(nullptr),
     _someVectorReader(nullptr),
-    _someVectorLogger("SomeVector"),
+    _someVectorLogger("vectorTopic"),
     _type(new VectorPubSubType())
   {}
   virtual ~Logger(){
@@ -83,7 +83,7 @@ public:
     }
 
     //Some Vector Subscriber
-    _someVector = _participant->create_topic("SomeVector", "Vector", TOPIC_QOS_DEFAULT);
+    _someVector = _participant->create_topic("VectorTopic", "Vector", TOPIC_QOS_DEFAULT);
     if(_someVector == nullptr) {
       std::cout << "Failed to create topic" << std::endl;
     }
@@ -137,4 +137,3 @@ int main(int argc, char** argv) {
   delete log;
   return 0;
 }
-

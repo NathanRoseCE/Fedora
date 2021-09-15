@@ -1,3 +1,4 @@
 #!/bin/bash
 
-./build/BasicLogger
+MicroXRCEAgent udp4  -p 2020
+

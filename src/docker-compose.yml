@@ -9,6 +9,14 @@ services:
     build: ./VectorPublisher
     networks:
       - DDS
-
+  agent:
+    build: ./Agent
+    networks:
+      - DDS
+  clientone:
+    build: ./ClientOne
+    networks:
+      - DDS
+     
 networks:
   DDS:

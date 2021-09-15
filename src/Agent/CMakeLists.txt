@@ -33,7 +33,7 @@ message(STATUS "Adding Message sources...")
 file(GLOB messageSources "${DDS_Message_Source_location}/*.cxx")
 set(Message_include_dir messages)
 
-add_executable(BasicLogger src/Logger.cpp ${messageSources})
-target_include_directories(BasicLogger PRIVATE ${Message_include_dir})
-target_link_libraries(BasicLogger fastrtps fastcdr)
+#add_executable(BasicLogger src/Logger.cpp ${messageSources})
+#target_include_directories(BasicLogger PRIVATE ${Message_include_dir})
+#target_link_libraries(BasicLogger fastrtps fastcdr)
 
