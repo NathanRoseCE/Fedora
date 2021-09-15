@@ -1,7 +1,3 @@
-# Notes:
-# This docker will compile the messages each time, the IDL's should be mounted at: /usr/src/Fedora/idl
-# The compiled sources will be put in /usr/src/Fedora/messages/
-# Fast-DDS-Gen is put in /usr/src/ddsGen/
 #Ubuntu Base image
 FROM ubuntu:latest
 
