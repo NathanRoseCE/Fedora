@@ -83,7 +83,7 @@ public:
     }
 
     //Some Vector Subscriber
-    _someVector = _participant->create_topic("VectorTopic", "Vector", TOPIC_QOS_DEFAULT);
+    _someVector = _participant->create_topic("vectorTopic", "Vector", TOPIC_QOS_DEFAULT);
     if(_someVector == nullptr) {
       std::cout << "Failed to create topic" << std::endl;
     }

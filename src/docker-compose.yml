@@ -4,19 +4,33 @@ services:
   logger:
     build: ./Logger
     networks:
-      - DDS
+      DDS:
+        ipv4_address: 172.16.238.44
   vectorpublisher:
     build: ./VectorPublisher
     networks:
-      - DDS
+      DDS:
+        ipv4_address: 172.16.238.45
   agent:
     build: ./Agent
     networks:
-      - DDS
+      DDS:
+        ipv4_address: 172.16.238.2
   clientone:
     build: ./ClientOne
     networks:
-      - DDS
+      DDS:
+        ipv4_address: 172.16.238.3
+  clienttwo:
+    build: ./ClientTwo
+    networks:
+      DDS:
+        ipv4_address: 172.16.238.4
      
 networks:
   DDS:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.238.0/24
