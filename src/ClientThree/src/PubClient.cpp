@@ -17,7 +17,6 @@
 
 #include <uxr/client/client.h>
 #include <ucdr/microcdr.h>
-#include <uxr/client/core/type/xrce_types.h>
 
 #include <stdio.h> //printf
 #include <string.h> //strcmp
@@ -28,81 +27,8 @@
 #define BUFFER_SIZE     UXR_CONFIG_UDP_TRANSPORT_MTU* STREAM_HISTORY
 
 magnitude topic;
-
-char activeAgentIp[16];
-uint16_t activeAgentPort;
-bool found = false;
-
-bool on_agent_found(
-        const TransportLocator* locator,
-        void* args)
-{
-    (void) args;
-    switch (locator->format)
-    {
-        case ADDRESS_FORMAT_MEDIUM:
-        {
-            uxrIpProtocol ip_protocol;
-            uxr_locator_to_ip(locator, activeAgentIp, sizeof(activeAgentIp), &activeAgentPort, &ip_protocol);
-            printf("Agent found => ip: %s, port: %d\n", activeAgentIp, activeAgentPort);
-	    printf("Using this agent");
-	    found=true;
-            break;
-        }
-        case ADDRESS_FORMAT_LARGE:
-        {
-            char ip[46];
-            uint16_t port;
-            uxrIpProtocol ip_protocol;
-            uxr_locator_to_ip(locator, ip, sizeof(ip), &port, &ip_protocol);
-            printf("Agent found => ip: %s, port: %d\n", ip, port);
-	    printf("Cannot handle this format");
-            break;
-        }
-        default:
-            break;
-    }
-    return false;
-}
-
-bool find_agent() {
-  size_t numAgents = 3;
-  TransportLocator agent_list[numAgents];
-
-  if( !uxr_ip_to_locator( "172.16.238.3", (uint16_t)2020, UXR_IPv4, &(agent_list[0]) ) ) {
-    printf("Something went wrong with uxr_ip_to_locator\n");
-  }
-  if( !uxr_ip_to_locator( "172.16.238.2", (uint16_t)7400, UXR_IPv4, &(agent_list[1]) ) ) {
-    printf("Something went wrong with uxr_ip_to_locator\n");
-  }
-  if( !uxr_ip_to_locator( "172.16.238.2", (uint16_t)2020, UXR_IPv4, &(agent_list[2]) ) ) {//Agent ip
-    printf("Something went wrong with uxr_ip_to_locator\n");
-  }
-  for(int i = 0; i < numAgents; i++) {
-    char ip[46];
-    uint16_t port;
-    uxrIpProtocol ip_protocol;
-    uxr_locator_to_ip(&agent_list[i], ip, sizeof(ip), &port, &ip_protocol);
-    printf("Agent Locator => ip: %s, port: %d\n", ip, port);
-  }
-  uxr_discovery_agents_default(10, 1000, on_agent_found, NULL);
-  if(found){
-    printf("FOUND AN AGENT!!!!\n");
-    printf("IP Address: %s", activeAgentIp);
-  }
-  else {
-    printf("trying list method?\n");
-    uxr_discovery_agents(10, 1000, on_agent_found, NULL, agent_list, 3);
-    if(found){
-      printf("HAHA it worked\n");
-    }
-    else {
-      printf("Did not find an agent :(\n");
-    }
-  }
-  return found;
-}
-void on_topic(uxrSession* session,
+void on_topic(
+	      uxrSession* session,
 	      uxrObjectId object_id,
 	      uint16_t request_id,
 	      uxrStreamId stream_id,
@@ -116,43 +42,45 @@ void on_topic(uxrSession* session,
   printf("Magnitude: %f", topic.val);
 }
 
-int main(int args,
-	 char** argv) {
+int main(
+        int args,
+        char** argv) {
   printf("booting up client\n");
-  
-  if( !find_agent() ) {
-    printf("Unable to find an agent, exiting\n");
-    return 1;
+  // CLI
+  if (3 > args || 0 == atoi(argv[2])) {
+    printf("usage: program [-h | --help] | ip port [<max_topics>]\n");
+    return 0;
   }
-  char ip[20];
-  char port[10];
-  uint32_t max_topics = 10000;
 
-  sprintf(port, "%d", activeAgentPort);
+  char* ip = argv[1];
+  char* port = argv[2];
+  uint32_t max_topics = (args == 4) ? (uint32_t)atoi(argv[3]) : UINT32_MAX;
+
   // Transport
   uxrUDPTransport transport;
-  if (!uxr_init_udp_transport(&transport, UXR_IPv4, activeAgentIp, port)) {
-    printf("Error at create transport.\n");
-    return 1;
-  }
+  if (!uxr_init_udp_transport(&transport, UXR_IPv4, ip, port))
+    {
+      printf("Error at create transport.\n");
+      return 1;
+    }
 
   // Session
   uxrSession session;
   uxr_init_session(&session, &transport.comm, 0xAAAABBBB);
   uxr_set_topic_callback(&session, on_topic, NULL);
-  if (!uxr_create_session(&session)) {
-    printf("Error at create session.\n");
-    return 1;
-  }
+  if (!uxr_create_session(&session))
+    {
+      printf("Error at create session.\n");
+      return 1;
+    }
 
   // Streams
   uint8_t output_reliable_stream_buffer[BUFFER_SIZE];
-  uxrStreamId reliable_out = uxr_create_output_reliable_stream(&session, output_reliable_stream_buffer,
-							       BUFFER_SIZE, STREAM_HISTORY);
+  uxrStreamId reliable_out = uxr_create_output_reliable_stream(&session, output_reliable_stream_buffer, BUFFER_SIZE,
+							       STREAM_HISTORY);
 
   uint8_t input_reliable_stream_buffer[BUFFER_SIZE];
-  uxrStreamId reliable_in = uxr_create_input_reliable_stream(&session, input_reliable_stream_buffer,
-							     BUFFER_SIZE, STREAM_HISTORY);
+  uxrStreamId reliable_in = uxr_create_input_reliable_stream(&session, input_reliable_stream_buffer, BUFFER_SIZE, STREAM_HISTORY);
 
   // Create entities
   uxrObjectId participant_id = uxr_object_id(0x01, UXR_PARTICIPANT_ID);

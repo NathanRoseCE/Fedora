@@ -144,26 +144,6 @@ int main(
 
   
   // set up the publisher
-  
-  // Streams
-  /*
-  uint8_t pub_output_reliable_stream_buffer[BUFFER_SIZE];
-  uxrStreamId pub_reliable_out = uxr_create_output_best_effort_stream(&session, pub_output_reliable_stream_buffer, MAGN_BUFFER_SIZE);
-  
-  uint8_t pub_input_reliable_stream_buffer[BUFFER_SIZE];
-  uxrStreamId pub_reliable_in = uxr_create_input_best_effort_stream(&session);
-  // Create entities
-  uxrObjectId pub_participant_id = uxr_object_id(0x01, UXR_PARTICIPANT_ID);
-  const char* pub_participant_xml = "<dds>"
-    "<participant>"
-    "<rtps>"
-    "<name>default_xrce_participant_two</name>"
-    "</rtps>"
-    "</participant>"
-    "</dds>";
-  uint16_t pub_participant_req = uxr_buffer_create_participant_xml(&session, pub_reliable_out, pub_participant_id, 0, pub_participant_xml, UXR_REPLACE);
-  */
-  
   uxrObjectId magn_topic_id = uxr_object_id(0x01, UXR_TOPIC_ID);
   const char* magn_topic_xml = "<dds>"
     "<topic>"
@@ -202,7 +182,6 @@ int main(
   // Iterate
   bool connected = true;
   while (connected && count < max_topics){
-    printf("iteration\n");
     uint8_t read_data_status;
     connected = uxr_run_session_until_all_status(&session, UXR_TIMEOUT_INF, &read_data_req, &read_data_status, 1);
     magnitude pubTopic = {

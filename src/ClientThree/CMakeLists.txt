@@ -22,3 +22,4 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
   )
 
 target_link_libraries(${PROJECT_NAME} microxrcedds_client $<$<C_COMPILER_ID:GNU>:-Wl,--gc-section,--no-export-dynamic>)
+

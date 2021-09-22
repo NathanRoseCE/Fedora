@@ -4,17 +4,11 @@ if(NOT CMAKE_VERSION VERSION_LESS 3.0)
     cmake_policy(SET CMP0048 NEW)
 endif()
 
-project(FedoraLogger)
+project(Agent)
 
 list(APPEND CMAKE_MODULE_PATH /usr/src/dds/install)
-# Find requirements
-if(NOT fastcdr_FOUND)
-    find_package(fastcdr REQUIRED)
-endif()
 
-if(NOT fastrtps_FOUND)
-    find_package(fastrtps REQUIRED)
-endif()
+find_package(microxrcedds_agent REQUIRED)
 
 # Set C++11
 include(CheckCXXCompilerFlag)
@@ -33,7 +27,7 @@ message(STATUS "Adding Message sources...")
 file(GLOB messageSources "${DDS_Message_Source_location}/*.cxx")
 set(Message_include_dir messages)
 
-#add_executable(BasicLogger src/Logger.cpp ${messageSources})
-#target_include_directories(BasicLogger PRIVATE ${Message_include_dir})
-#target_link_libraries(BasicLogger fastrtps fastcdr)
+add_executable(Agent src/Agent.cpp ${messageSources})
+target_include_directories(Agent PRIVATE ${Message_include_dir})
+target_link_libraries(Agent microxrcedds_agent)
 

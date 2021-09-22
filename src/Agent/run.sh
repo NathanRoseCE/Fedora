@@ -1,4 +1,4 @@
 #!/bin/bash
 
-MicroXRCEAgent udp4  -p 2020
+./build/Agent udp4  -p 2020 -d 7400
 
