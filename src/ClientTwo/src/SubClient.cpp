@@ -1,4 +1,3 @@
-
 // Copyright 2017 Proyectos y Sistemas de Mantenimiento SL (eProsima).
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,9 +31,50 @@
 #define MAGN_BUFFER_SIZE     UXR_CONFIG_UDP_TRANSPORT_MTU* STREAM_HISTORY
 
 Vector topic;
+char activeAgentIp[16];
+uint16_t activeAgentPort;
+bool found;
 
-void on_topic(
-	      uxrSession* session,
+bool on_agent_found(const TransportLocator* locator,
+		    void* args) {
+  (void) args;
+  switch (locator->format) {
+  case ADDRESS_FORMAT_MEDIUM: {
+    uxrIpProtocol ip_protocol;
+    uxr_locator_to_ip(locator, activeAgentIp, sizeof(activeAgentIp), &activeAgentPort, &ip_protocol);
+    printf("Agent found => ip: %s, port: %d\n", activeAgentIp, activeAgentPort);
+    printf("Using this agent");
+    found=true;
+    break;
+  }
+  case ADDRESS_FORMAT_LARGE: {
+    char ip[46];
+    uint16_t port;
+    uxrIpProtocol ip_protocol;
+    uxr_locator_to_ip(locator, ip, sizeof(ip), &port, &ip_protocol);
+    printf("Agent found => ip: %s, port: %d\n", ip, port);
+    printf("Cannot handle this format");
+    break;
+  }
+  default:
+    break;
+  }
+  return false;
+}
+
+bool find_agent() {
+  uxr_discovery_agents_default(10, 1000, on_agent_found, NULL);
+  if(found){
+    printf("FOUND AN AGENT!!!!\n");
+    printf("IP Address: %s", activeAgentIp);
+  }
+  else {
+    printf("Did not find an agent :(\n");
+  }
+  return found;
+}
+
+void on_topic(uxrSession* session,
 	      uxrObjectId object_id,
 	      uint16_t request_id,
 	      uxrStreamId stream_id,
@@ -51,42 +91,37 @@ void on_topic(
   (*count_ptr)++;
 }
 
-int main(
-	 int args,
-	 char** argv)
-{
-  printf("Booting up\n");
-  // CLI
-  if (3 > args || 0 == atoi(argv[2]))
-    {
-      printf("usage: program [-h | --help] | ip port [<max_topics>]\n");
-      return 0;
-    }
-
-  char* ip = argv[1];
-  char* port =  argv[2];
-  uint32_t max_topics = (args == 4) ? (uint32_t)atoi(argv[3]) : UINT32_MAX;
-
+int main(int args,
+	 char** argv) {
+  printf("booting up client\n");
+  
+  if( !find_agent() ) {
+    printf("Unable to find an agent, exiting\n");
+    return 1;
+  }
+  
+  char port[10];
+  uint32_t max_topics = 10000;
+  sprintf(port, "%d", activeAgentPort);
+  
   // State
   uint32_t count = 0;
 
   // Transport
   uxrUDPTransport transport;
-  if (!uxr_init_udp_transport(&transport, UXR_IPv4, ip, port))
-    {
-      printf("Error at create transport.\n");
-      return 1;
-    }
+  if (!uxr_init_udp_transport(&transport, UXR_IPv4, activeAgentIp, port)) {
+    printf("Error at create transport.\n");
+    return 1;
+  }
 
   // Session
   uxrSession session;
   uxr_init_session(&session, &transport.comm, 0xCCCCDDDD);
   uxr_set_topic_callback(&session, on_topic, &count);
-  if (!uxr_create_session(&session))
-    {
-      printf("Error at create session.\n");
-      return 1;
-    }
+  if (!uxr_create_session(&session)) {
+    printf("Error at create session.\n");
+    return 1;
+  }
 
   // Streams
   uint8_t sub_output_reliable_stream_buffer[BUFFER_SIZE];
@@ -181,19 +216,27 @@ int main(
     
   // Iterate
   bool connected = true;
-  while (connected && count < max_topics){
+  while (connected && (count < max_topics)) {
     uint8_t read_data_status;
-    connected = uxr_run_session_until_all_status(&session, UXR_TIMEOUT_INF, &read_data_req, &read_data_status, 1);
+    connected &= uxr_run_session_until_confirm_delivery(&session, 1000);
     magnitude pubTopic = {
       sqrtf( (topic.value[0] * topic.value[0]) +
     	     (topic.value[1] * topic.value[1]) +
 	     (topic.value[2] * topic.value[2]) )
     };
+    if( !connected ) {
+      printf("Agent Died\n");
+      printf("Consider Making a new agent\n");
+    }
     ucdrBuffer outBuf;
     uint32_t topic_size = magnitude_size_of_topic(&pubTopic, 0);
     uxr_prepare_output_stream(&session, sub_reliable_out, magn_datawriter_id, &outBuf, topic_size);
     magnitude_serialize_topic(&outBuf, &pubTopic);
     connected &= uxr_run_session_time(&session, 1000);
+    if( !connected ) {
+      printf("Agent Died\n");
+      printf("Consider Making a new agent\n");
+    }
     printf("Sent: %f\n", pubTopic.val);
   }
 

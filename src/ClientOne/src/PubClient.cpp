@@ -38,10 +38,8 @@ bool on_agent_found(
         void* args)
 {
     (void) args;
-    switch (locator->format)
-    {
-        case ADDRESS_FORMAT_MEDIUM:
-        {
+    switch (locator->format) {
+        case ADDRESS_FORMAT_MEDIUM: {
             uxrIpProtocol ip_protocol;
             uxr_locator_to_ip(locator, activeAgentIp, sizeof(activeAgentIp), &activeAgentPort, &ip_protocol);
             printf("Agent found => ip: %s, port: %d\n", activeAgentIp, activeAgentPort);
@@ -49,8 +47,7 @@ bool on_agent_found(
 	    found=true;
             break;
         }
-        case ADDRESS_FORMAT_LARGE:
-        {
+        case ADDRESS_FORMAT_LARGE: {
             char ip[46];
             uint16_t port;
             uxrIpProtocol ip_protocol;
@@ -66,39 +63,13 @@ bool on_agent_found(
 }
 
 bool find_agent() {
-  size_t numAgents = 3;
-  TransportLocator agent_list[numAgents];
-
-  if( !uxr_ip_to_locator( "172.16.238.3", (uint16_t)2020, UXR_IPv4, &(agent_list[0]) ) ) {
-    printf("Something went wrong with uxr_ip_to_locator\n");
-  }
-  if( !uxr_ip_to_locator( "172.16.238.2", (uint16_t)7400, UXR_IPv4, &(agent_list[1]) ) ) {
-    printf("Something went wrong with uxr_ip_to_locator\n");
-  }
-  if( !uxr_ip_to_locator( "172.16.238.2", (uint16_t)2020, UXR_IPv4, &(agent_list[2]) ) ) {//Agent ip
-    printf("Something went wrong with uxr_ip_to_locator\n");
-  }
-  for(int i = 0; i < numAgents; i++) {
-    char ip[46];
-    uint16_t port;
-    uxrIpProtocol ip_protocol;
-    uxr_locator_to_ip(&agent_list[i], ip, sizeof(ip), &port, &ip_protocol);
-    printf("Agent Locator => ip: %s, port: %d\n", ip, port);
-  }
   uxr_discovery_agents_default(10, 1000, on_agent_found, NULL);
   if(found){
     printf("FOUND AN AGENT!!!!\n");
     printf("IP Address: %s", activeAgentIp);
   }
   else {
-    printf("trying list method?\n");
-    uxr_discovery_agents(10, 1000, on_agent_found, NULL, agent_list, 3);
-    if(found){
-      printf("HAHA it worked\n");
-    }
-    else {
-      printf("Did not find an agent :(\n");
-    }
+    printf("Did not find an agent :(\n");
   }
   return found;
 }
@@ -253,6 +224,10 @@ int main(int args,
 
     printf("Sent topic: <%f, %f, %f>\n", topic.value[0], topic.value[1], topic.value[2]);
     connected = uxr_run_session_time(&session, 1000);
+    if( !connected ) {
+      printf("Agent Died\n");
+      printf("Consider Making a new agent\n");
+    }
     sleep(1);
     i++;
   }
