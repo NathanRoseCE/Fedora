@@ -1,33 +1,27 @@
-#Ubuntu Base image
-FROM ubuntu:latest
+FROM ubuntu:latest AS builder
 
-#Ensure bash shell is used
 SHELL ["/bin/bash", "-c"]
-
-# Source Code goes here
 RUN mkdir /usr/src/Fedora/
-WORKDIR /usr/src/Fedora/
+WORKDIR /usr/src/
 
 # Update images
-RUN apt-get update && apt-get upgrade
+RUN apt-get update && apt-get upgrade -y
 ENV LANG en_US.utf8
 
 # needed to fix TZData hanging
 ENV TZ=America/New_York
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
-# install needed applications
 RUN apt-get  -y -qq install cmake \
     	     	    	    g++ \
 			    git \
 			    openjdk-8-jdk \
 			    gradle
 
-# Install XRCE-DDS-Agent
+# Install XRCE-DDS
 RUN mkdir /usr/src/ddsXrce/
 RUN git clone https://github.com/eProsima/Micro-XRCE-DDS.git /usr/src/ddsXrce/
-RUN mkdir /usr/src/ddsXrce/build/
-RUN cmake /usr/src/ddsXrce/ -B /usr/src/ddsXrce/build/
+RUN mkdir /usr/src/ddsXrce/build/ 
+RUN cmake /usr/src/ddsXrce/ -B /usr/src/ddsXrce/build/ -DPROFILE_DISCOVERY=ON
 RUN cd /usr/src/ddsXrce/build/ && make install
 RUN ldconfig /usr/local/lib/
 
@@ -37,17 +31,27 @@ RUN git clone --recursive https://github.com/eProsima/Micro-XRCE-DDS-Gen.git /us
 RUN cd /usr/src/ddsXrceGen/ && gradle build -Dbranch=v1.2.5
 RUN chmod +x /usr/src/ddsXrceGen/scripts/microxrceddsgen
 
-#copy over source files
-COPY . /usr/src/Fedora/
-
-# Create the messages
-RUN mkdir /usr/src/Fedora/messages/
+# Build messages
+WORKDIR /usr/src/Fedora
+RUN mkdir idl build messages src
+COPY ./idl /usr/src/Fedora/idl
 RUN /usr/src/ddsXrceGen/scripts/microxrceddsgen idl/*.idl -d ./messages/
 
-
-#Build the app
+#Build software
+COPY ./src /usr/src/Fedora/src
+COPY ./CMakeLists.txt .
 RUN cmake . -B build
 RUN cd build && make
+
+
+FROM ubuntu:latest AS production
+
+RUN mkdir /usr/src/Fedora/build -p
+WORKDIR /usr/src/Fedora
+COPY --from=builder /usr/src/Fedora/build /usr/src/Fedora/build
+COPY --from=builder /usr/local/lib/. /usr/local/lib/.
+RUN ldconfig /usr/local/lib/
+COPY ./run.sh .
 
 #RUN Command
 CMD ["./run.sh"]

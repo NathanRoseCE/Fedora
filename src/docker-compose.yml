@@ -26,6 +26,11 @@ services:
     networks:
       DDS:
         ipv4_address: 172.16.238.4
+#  clientthree:
+#    build: ./ClientThree
+#    networks:
+#      DDS:
+#        ipv4_address: 172.16.238.232
      
 networks:
   DDS:

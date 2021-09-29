@@ -9,7 +9,7 @@ RUN mkdir /usr/src/Fedora/
 WORKDIR /usr/src/Fedora/
 
 # Update images
-RUN apt-get update && apt-get upgrade -y
+RUN apt-get update && apt-get upgrade
 ENV LANG en_US.utf8
 
 # needed to fix TZData hanging
@@ -18,16 +18,10 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # install needed applications
 RUN apt-get  -y -qq install cmake \
-        	    	    g++ \
+    	     	    	    g++ \
 			    git \
-			    libpcap-dev \
 			    openjdk-8-jdk \
 			    gradle
-
-# Install FreeRtos
-RUN mkdir /usr/src/FreeRTOS
-RUN git clone https://github.com/FreeRTOS/FreeRTOS.git --recurse-submodules /usr/src/FreeRTOS/
-RUN cd /usr/src/FreeRTOS/FreeRTOS-Plus/Demo/FreeRTOS_Plus_TCP_Echo_Posix && make 
 
 # Install XRCE-DDS-Agent
 RUN mkdir /usr/src/ddsXrce/
