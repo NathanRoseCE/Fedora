@@ -9,7 +9,6 @@ RUN mkdir /usr/src/Fedora/
 WORKDIR /usr/src/Fedora/
 
 # oUpdate images
-RUN apt-get update && apt-get upgrade
 ENV LANG en_US.utf8
 
 # needed to fix TZData hanging

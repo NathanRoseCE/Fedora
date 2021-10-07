@@ -106,7 +106,7 @@ void Broker::registerSubscriber(SubscriberDetails details) {
 }
 
 void Broker::runSession(int ms) {
-  bool connected = uxr_run_session_until_confirm_delivery(&session, ms);
+  bool connected = uxr_run_session_time(&session, ms);
   if( !connected ) {
     std::cout << "Detected that Agent is down" << std::endl;
     connectToAgent();

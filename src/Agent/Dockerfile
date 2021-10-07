@@ -9,7 +9,6 @@ RUN mkdir /usr/src/Fedora/
 WORKDIR /usr/src/Fedora/
 
 # Update images
-RUN apt-get update && apt-get upgrade
 ENV LANG en_US.utf8
 
 # needed to fix TZData hanging
@@ -17,11 +16,11 @@ ENV TZ=America/New_York
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # install needed applications
-RUN apt-get  -y -qq install cmake \
-    	     	    	    g++ \
-			    git \
-			    openjdk-8-jdk \
-			    gradle
+RUN apt-get update && apt-get -y -qq install  cmake \
+    	    	      	      	     	      g++ \
+					      git \
+					      openjdk-8-jdk \
+					      gradle
 
 # Install XRCE-DDS-Agent
 RUN mkdir /usr/src/ddsXrce/

@@ -3,7 +3,7 @@ if (${CMAKE_VERSION} VERSION_GREATER 3.0)
   cmake_policy(SET CMP0048 NEW)
 endif()
 
-project(SubClient)
+project(Broker)
 
 find_package(microxrcedds_client REQUIRED)
 find_package(microxrcedds_agent REQUIRED)
