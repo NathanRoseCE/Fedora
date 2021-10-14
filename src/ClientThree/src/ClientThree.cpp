@@ -26,7 +26,7 @@ extern "C" {
 void on_topic(struct ucdrBuffer* ub) {
   magnitude topic;
   magnitude_deserialize_topic(ub, &topic);
-  std:: cout << "Magnitude: " <<  topic.val << std::endl;
+  std:: cout << "Magnitude-----------: " <<  topic.val << std::endl;
 }
 
 
@@ -90,9 +90,9 @@ int main(int args, char** argv) {
 
     ucdrBuffer ub;
     uint32_t topic_size = Vector_size_of_topic(&topic, 0);
+    broker.prepPublish(id, &ub, topic_size);
     Vector_serialize_topic(&ub, &topic);
     
-    broker.prepPublish(id, &ub, topic_size);
     broker.runSession(1000);
     sleep(1);
     i++;

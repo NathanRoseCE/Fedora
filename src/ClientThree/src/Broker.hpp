@@ -73,4 +73,6 @@ private: //state, TODO split this into multiple classes
   uint8_t *outputBuffer, *inputBuffer;
   uint32_t outputBufferSize, inputBufferSize;
   uint16_t idIncramenter;
+  char agentIp[16];
+  char port[10];
 };

@@ -3,13 +3,11 @@ version: '3.7'
 services:
   logger:
     build: ./Logger
-    restart: always
     networks:
       DDS:
         ipv4_address: 172.16.238.44
   vectorpublisher:
     build: ./VectorPublisher
-    restart: always
     networks:
       DDS:
         ipv4_address: 172.16.238.45
@@ -31,7 +29,6 @@ services:
         ipv4_address: 172.16.238.4
   clientthree:
     build: ./ClientThree
-    restart: always
     networks:
       DDS:
         ipv4_address: 172.16.238.232

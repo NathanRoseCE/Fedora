@@ -255,7 +255,7 @@ std::thread create_agent() {
       connected = uxr_run_session_time(&session, 1000);
       if( !connected ) {
 	printf("Detected that Agent Died\n");
-	agent_thread = create_agent();
+	//	agent_thread = create_agent();
       }
       sleep(1);
       i++;
