@@ -86,11 +86,6 @@ void Broker::registerSubscriber(SubscriberDetails details) {
   uint16_t datareader_req = uxr_buffer_create_datareader_xml(&session, reliable_out,
 							     datareader_id,
 							     subscriber_id, details.dataReaderXml, UXR_REPLACE);
-  uxrDeliveryControl delivery_control = {
-    0
-  };
-  delivery_control.max_samples = UXR_MAX_SAMPLES_UNLIMITED; 
-  uint16_t read_data_req = uxr_buffer_request_data(&session, reliable_out, datareader_id, reliable_in, &delivery_control);
   int num_requests = 3;
   uint16_t requests[num_requests] = {topic_req, subscriber_req, datareader_req};
   uint8_t status[num_requests];
@@ -102,10 +97,14 @@ void Broker::registerSubscriber(SubscriberDetails details) {
     throw "Error Registering Subscriber";
   }
   
+  uxrDeliveryControl delivery_control = {
+    0
+  };
+  delivery_control.max_samples = UXR_MAX_SAMPLES_UNLIMITED; 
+  uint16_t read_data_req = uxr_buffer_request_data(&session, reliable_out, datareader_id, reliable_in, &delivery_control); // This is not put with the rest of the requests?
 }
 
 void Broker::runSession(int ms) {
-  std::cout << "new session run" << std::endl;
   bool connected = uxr_run_session_until_confirm_delivery(&session, ms);
   if( !connected ) {
     std::cout << "Detected that Agent is down" << std::endl;
@@ -115,12 +114,7 @@ void Broker::runSession(int ms) {
     if( !connected) {
       throw "Unable to connect to agent"; //TODO multiple retries?
     }
-    std::cout << "Fail!! --------------" << std::endl;
   }
-  else {
-    std::cout << "SUCCESS!! --------------" << std::endl;
-  }
-  std::cout << "session stop" << std::endl;
 }
 void Broker::close() {
   std::cout << "Closing down Broker" << std::endl;
@@ -162,7 +156,7 @@ void Broker::connectToAgent() {//TODO refactor, make actual exceptions
   }
 
   //setup session
-  uxr_init_session(&session, &transport.comm, 0xAAAABBBB);
+  uxr_init_session(&session, &transport.comm, 0xadbde4323);
   uxr_set_topic_callback(&session, subscribeCallback, this);
   if (!uxr_create_session(&session)) {
     throw "Unable to create Session";
@@ -232,14 +226,9 @@ void Broker::subscribeCallback(uxrSession* session,
 			       struct ucdrBuffer* ub,
 			       uint16_t length,
 			       void* args) {
-  std::cout << "------------------ CALLBACK! ------------------" << std::endl;
-  std::cout << "object id: " << object_id.id << std::endl;
   for(SubscriberDetails sub : ((Broker*)args)->subscribers) {
-    std::cout << "sub id: " << sub.id << std::endl;
     if( object_id.id == sub.id ) {
-      std::cout << "calling callback" << std::endl;
       sub.callback(ub);
     }
   }
-  std::cout << "---------------- CALLBACK! END ----------------" << std::endl;
 }
