@@ -1,17 +1,14 @@
-#include "Broker.hpp"
-extern "C"{
-  #include "Vector.h"
-  #include "Magnitude.h"
-}
+#include "BrokerImpl.hpp"
 
 #define STREAM_HISTORY  8
 struct FindAgentArgs{
   bool* found;
-  Broker* context;
+  BrokerImpl* context;
 };
 
   
-Broker::Broker(bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, uint8_t *inputBuffer, uint32_t inBufferSize, const char* participant_xml) :
+BrokerImpl::BrokerImpl(uint32_t id, bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, uint8_t *inputBuffer, uint32_t inBufferSize, const char* participant_xml) :
+  id(id),
   clientOnly(clientOnly),
   outputBuffer(outputBuffer),
   outputBufferSize(outBufferSize),
@@ -21,11 +18,11 @@ Broker::Broker(bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, u
   idIncramenter(1)
 {
 }
-void Broker::initialize() {
+void BrokerImpl::initialize() {
   connectToAgent();
 }
   
-uint16_t Broker::initPublisher(const char* topic_xml, const char* publisherXml, const char* dataWriter_xml) {
+uint16_t BrokerImpl::initPublisher(const char* topic_xml, const char* publisherXml, const char* dataWriter_xml) {
   PublisherDetails publisher = {
     idIncramenter++,
     topic_xml,
@@ -37,7 +34,7 @@ uint16_t Broker::initPublisher(const char* topic_xml, const char* publisherXml, 
   std::cout << "Publisher created successfully: " << publisher.id << std::endl;
   return publisher.id;
 }
-void Broker::registerPublisher(PublisherDetails details) {
+void BrokerImpl::registerPublisher(PublisherDetails details) {
   uint16_t topic_req = uxr_buffer_create_topic_xml(&session, reliable_out,
 						   uxr_object_id(details.id, UXR_TOPIC_ID), participant_id,
 						   details.topicXml, UXR_REPLACE);
@@ -58,10 +55,10 @@ void Broker::registerPublisher(PublisherDetails details) {
     throw "Error Registering Publisher";
   }
 }
-void Broker::prepPublish(uint16_t id, ucdrBuffer *serializedBuffer, uint32_t topicSize) {
+void BrokerImpl::prepPublish(uint16_t id, ucdrBuffer *serializedBuffer, uint32_t topicSize) {
   uxr_prepare_output_stream(&session, reliable_out, uxr_object_id(id, UXR_DATAWRITER_ID), serializedBuffer, topicSize);
 }
-uint16_t Broker::initSubscriber(const char* topic_xml, const char* subscriber_xml, const char* dataReader_xml, SUBSCRIBER_CALLBACK) {
+uint16_t BrokerImpl::initSubscriber(const char* topic_xml, const char* subscriber_xml, const char* dataReader_xml, SUBSCRIBER_CALLBACK) {
   
   SubscriberDetails subscriber = {
     idIncramenter++,
@@ -75,7 +72,7 @@ uint16_t Broker::initSubscriber(const char* topic_xml, const char* subscriber_xm
   std::cout << "Subscriber created successfully: " << subscriber.id << std::endl;
   return subscriber.id;
 }
-void Broker::registerSubscriber(SubscriberDetails details) {
+void BrokerImpl::registerSubscriber(SubscriberDetails details) {
   uint16_t topic_req = uxr_buffer_create_topic_xml(&session, reliable_out,
 						   uxr_object_id(details.id, UXR_TOPIC_ID), participant_id,
 						   details.topicXml, UXR_REPLACE);
@@ -104,7 +101,7 @@ void Broker::registerSubscriber(SubscriberDetails details) {
   uint16_t read_data_req = uxr_buffer_request_data(&session, reliable_out, datareader_id, reliable_in, &delivery_control); // This is not put with the rest of the requests?
 }
 
-void Broker::runSession(int ms) {
+void BrokerImpl::runSession(int ms) {
   bool connected = uxr_run_session_until_confirm_delivery(&session, ms);
   if( !connected ) {
     std::cout << "Detected that Agent is down" << std::endl;
@@ -116,25 +113,25 @@ void Broker::runSession(int ms) {
     }
   }
 }
-void Broker::close() {
-  std::cout << "Closing down Broker" << std::endl;
+void BrokerImpl::close() {
+  std::cout << "Closing down BrokerImpl" << std::endl;
   uxr_delete_session(&session);
   uxr_close_udp_transport(&transport);
 }
 
-bool Broker::findAgent() {
+bool BrokerImpl::findAgent() {
   bool found = false;
   struct FindAgentArgs args = {&found, this};
-  uxr_discovery_agents_default(10, 1000, Broker::onAgentFound, (void*)&args);
+  uxr_discovery_agents_default(10, 1000, BrokerImpl::onAgentFound, (void*)&args);
   if(!found) {
     sleep(1);//try again in a second TODO randomize
     struct FindAgentArgs args = {&found, this};
-    uxr_discovery_agents_default(10, 1000, Broker::onAgentFound, (void*)&args);
+    uxr_discovery_agents_default(10, 1000, BrokerImpl::onAgentFound, (void*)&args);
     if(!found) {
       std::cout << "self booting agent" << std::endl;
       createAgent();
       struct FindAgentArgs args = {&found, this};
-      uxr_discovery_agents_default(10, 1000, Broker::onAgentFound, (void*)&args);
+      uxr_discovery_agents_default(10, 1000, BrokerImpl::onAgentFound, (void*)&args);
     }
   }
   if(!found) {
@@ -143,7 +140,7 @@ bool Broker::findAgent() {
   }
   return found;
 }
-void Broker::connectToAgent() {//TODO refactor, make actual exceptions
+void BrokerImpl::connectToAgent() {//TODO refactor, make actual exceptions
   findAgent();
   uxrIpProtocol ip_protocol;
   uint16_t agentPort;
@@ -156,7 +153,7 @@ void Broker::connectToAgent() {//TODO refactor, make actual exceptions
   }
 
   //setup session
-  uxr_init_session(&session, &transport.comm, 0xadbde4323);
+  uxr_init_session(&session, &transport.comm, id);
   uxr_set_topic_callback(&session, subscribeCallback, this);
   if (!uxr_create_session(&session)) {
     throw "Unable to create Session";
@@ -189,13 +186,13 @@ void Broker::connectToAgent() {//TODO refactor, make actual exceptions
   std::cout << "Agent Connection Established and Ready" << std::endl;
   std::cout << "IP: " << agentIp << ":" << (int)agentPort << std::endl;
 }
-void Broker::createAgent() {
+void BrokerImpl::createAgent() {
   std::cout << "Creating new agent" << std::endl;
   agentThread = std::thread(createAgentHelper);
 }
   
 //callback functions
-void Broker::createAgentHelper() {
+void BrokerImpl::createAgentHelper() {
   const char *args[6] = {
     "./agent", "udp4",
     "-p", "2020",
@@ -211,7 +208,7 @@ void Broker::createAgentHelper() {
   return;
 }
 
-bool Broker::onAgentFound(const TransportLocator* locator, void* args) {
+bool BrokerImpl::onAgentFound(const TransportLocator* locator, void* args) {
   //any needed checking here
   struct FindAgentArgs trueArgs = *((struct FindAgentArgs*)args);
   *(trueArgs.found)=true;
@@ -219,14 +216,14 @@ bool Broker::onAgentFound(const TransportLocator* locator, void* args) {
   return true;
 }
 
-void Broker::subscribeCallback(uxrSession* session,
+void BrokerImpl::subscribeCallback(uxrSession* session,
 			       uxrObjectId object_id,
 			       uint16_t request_id,
 			       uxrStreamId stream_id,
 			       struct ucdrBuffer* ub,
 			       uint16_t length,
 			       void* args) {
-  for(SubscriberDetails sub : ((Broker*)args)->subscribers) {
+  for(SubscriberDetails sub : ((BrokerImpl*)args)->subscribers) {
     if( object_id.id == sub.id ) {
       sub.callback(ub);
     }

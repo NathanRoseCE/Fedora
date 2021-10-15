@@ -1,9 +1,10 @@
 #pragma once
-
-#include <uxr/agent/AgentInstance.hpp>
 #include <future>
 #include <vector> // TODO move to a stack solution for better determinability
 #include <thread>
+#include "Fedora/Broker.hpp"
+
+#include <uxr/agent/AgentInstance.hpp>
 
 extern "C" {//libraries that dont play well with Cpp
 #include <uxr/client/client.h>
@@ -29,9 +30,10 @@ typedef struct PublisherDetails {
   const char* dataWriterXml;
 } PublisherDetails_t;
 
-class Broker {
+
+class BrokerImpl : public Broker {
 public:
-  Broker(bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, uint8_t *inputBuffer, uint32_t inBufferSize, const char* participant_xml);
+  BrokerImpl(uint32_t id, bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, uint8_t *inputBuffer, uint32_t inBufferSize, const char* participant_xml);
 
   void initialize();
   uint16_t initPublisher(const char* topic_xml, const char* publisherXml, const char* dataWriter_xml);
@@ -75,4 +77,5 @@ private: //state, TODO split this into multiple classes
   uint16_t idIncramenter;
   char agentIp[16];
   char port[10];
+  uint32_t id;
 };

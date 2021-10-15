@@ -39,6 +39,7 @@ RUN /usr/src/ddsXrceGen/scripts/microxrceddsgen idl/*.idl -d ./messages/
 
 #Build software
 COPY ./src /usr/src/Fedora/src
+COPY ./Fedora /usr/src/Fedora/Fedora
 COPY ./CMakeLists.txt .
 RUN cmake . -B build
 RUN cd build && make

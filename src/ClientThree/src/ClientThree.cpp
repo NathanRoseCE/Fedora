@@ -12,21 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <future>
-#include "Broker.hpp"
-#define STREAM_HISTORY  8
-#define BUFFER_SIZE     UXR_CONFIG_UDP_TRANSPORT_MTU* STREAM_HISTORY
+#include "Fedora/Broker.hpp"
+#include <iostream>
 
+#include <unistd.h>
+#include <memory>
 extern "C" {
 #include "Vector.h"
 #include "Magnitude.h"
+#include <uxr/client/client.h>
 };
-
+#define STREAM_HISTORY  8
+#define BUFFER_SIZE     100* STREAM_HISTORY
 
 void on_topic(struct ucdrBuffer* ub) {
   magnitude topic;
   magnitude_deserialize_topic(ub, &topic);
-  std:: cout << "Magnitude-----------: " <<  topic.val << std::endl;
+  std::cout << "Magnitude-----------: " <<  topic.val << std::endl;
 }
 
 
@@ -74,10 +76,10 @@ int main(int args, char** argv) {
     "</data_reader>"
     "</dds>";
   
-  Broker broker(false, outBuffer, BUFFER_SIZE, inBuffer, BUFFER_SIZE, participant_xml);
-  broker.initialize();
-  uint16_t id = broker.initPublisher(topic_xml, publisher_xml, datawriter_xml);
-  uint16_t subId = broker.initSubscriber(magn_topic_xml, subscriber_xml, datareader_xml, &on_topic);
+  std::unique_ptr<Broker> broker(Broker::createBroker(0xabcdef12, false, outBuffer, BUFFER_SIZE, inBuffer, BUFFER_SIZE, participant_xml));
+  broker->initialize();
+  uint16_t id = broker->initPublisher(topic_xml, publisher_xml, datawriter_xml);
+  uint16_t subId = broker->initSubscriber(magn_topic_xml, subscriber_xml, datareader_xml, &on_topic);
 
   // Write topics
   uint32_t count = 0;
@@ -90,16 +92,16 @@ int main(int args, char** argv) {
 
     ucdrBuffer ub;
     uint32_t topic_size = Vector_size_of_topic(&topic, 0);
-    broker.prepPublish(id, &ub, topic_size);
+    broker->prepPublish(id, &ub, topic_size);
     Vector_serialize_topic(&ub, &topic);
     
-    broker.runSession(1000);
+    broker->runSession(1000);
     sleep(1);
     i++;
     std::cout << "beep" << std::endl;
   }
   std::cout << "Shutting down" << std::endl;
-  broker.close();
+  broker->close();
   return 0;
 }
 
