@@ -12,17 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <future>
-#include "Broker.hpp"
+
 #define STREAM_HISTORY  8
-#define BUFFER_SIZE     UXR_CONFIG_UDP_TRANSPORT_MTU* STREAM_HISTORY
+#define BUFFER_SIZE     100* STREAM_HISTORY
 
 extern "C" {
 #include "Vector.h"
 #include "Magnitude.h"
 };
 #include <math.h>
-
+#include <unistd.h>
+#include <iostream>
+#include <uxr/client/client.h>
+#include <memory>
+#include "Fedora/Broker.hpp"
 Vector topic;
 
 void on_topic(struct ucdrBuffer* ub) {
@@ -32,6 +35,7 @@ void on_topic(struct ucdrBuffer* ub) {
 }
 int main(int args,
 	 char** argv) {
+  std::cout << "Booting up" << std::endl;
   uint8_t outBuffer[BUFFER_SIZE];
   uint8_t inBuffer[BUFFER_SIZE];
   const char* participant_xml = "<dds>"
@@ -78,31 +82,40 @@ int main(int args,
     "</data_writer>"
     "</dds>";
     
-  Broker broker(false, outBuffer, BUFFER_SIZE, inBuffer, BUFFER_SIZE, participant_xml);
-  broker.initialize();
-  uint16_t subId = broker.initSubscriber(sub_topic_xml, subscriber_xml, sub_datareader_xml, &on_topic);
-  uint16_t pubId = broker.initPublisher(magn_topic_xml, magn_publisher_xml, magn_datawriter_xml);
-    
+  std::unique_ptr<Fedora::Broker> broker(Fedora::Broker::createBroker(0x12345678, false, outBuffer, BUFFER_SIZE, inBuffer, BUFFER_SIZE, participant_xml));
+  broker->initialize();
+  uint16_t subId = broker->initSubscriber(sub_topic_xml, subscriber_xml, sub_datareader_xml, &on_topic);
+  uint16_t pubId = broker->initPublisher(magn_topic_xml, magn_publisher_xml, magn_datawriter_xml);
+
+  std::cout << "Beep boop ready to go" << std::endl;
   // Iterate
   bool connected = true;
   int count = 0;
   int max_topics = 1000;
   while (count < max_topics) {
     uint8_t read_data_status;
+    std::cout << "in loop" << std::endl;
+    std::cout << "magn for: <" << topic.value[0] <<","<< topic.value[1]  <<","<< topic.value[2] << ">" << " is " <<
+      sqrtf( (topic.value[0] * topic.value[0]) +
+    	     (topic.value[1] * topic.value[1]) +
+	     (topic.value[2] * topic.value[2]) ) << std::endl;
     magnitude pubTopic = {
       sqrtf( (topic.value[0] * topic.value[0]) +
     	     (topic.value[1] * topic.value[1]) +
 	     (topic.value[2] * topic.value[2]) )
     };
     ucdrBuffer ub;
-    uint32_t topic_size = magnitude_size_of_topic(&pubTopic, 0);
     magnitude_serialize_topic(&ub, &pubTopic);
-    broker.prepPublish(pubId, &ub, topic_size);
-    broker.runSession(1000);
+    uint32_t topic_size = magnitude_size_of_topic(&pubTopic, 0);
+    std::cout << "serialized" << std::endl;
+    broker->prepPublish(pubId, &ub, topic_size);
+    std::cout << "ready to run sesion" << std::endl;
+    broker->runSession(1000);
     std::cout << "Sent: " <<  pubTopic.val << std::endl;
+    sleep(1);
   }
   std::cout << "Shutting down" << std::endl;
-  broker.close();
+  broker->close();
 
   return 0;
 }

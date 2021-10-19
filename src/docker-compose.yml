@@ -23,7 +23,6 @@ services:
 #        ipv4_address: 172.16.238.3
   clienttwo:
     build: ./ClientTwo
-    restart: always
     networks:
       DDS:
         ipv4_address: 172.16.238.4

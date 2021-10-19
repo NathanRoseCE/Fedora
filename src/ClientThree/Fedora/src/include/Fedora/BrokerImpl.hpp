@@ -1,8 +1,8 @@
-#pragma once
-#include <future>
+#ifndef FEDORA_BROKER_IMPL
+#define FEDORA_BROKER_IMPL
+
 #include <vector> // TODO move to a stack solution for better determinability
 #include <thread>
-#include "Fedora/Broker.hpp"
 
 #include <uxr/agent/AgentInstance.hpp>
 
@@ -13,11 +13,13 @@ extern "C" {//libraries that dont play well with Cpp
 #include <unistd.h>
 };
 
-#define SUBSCRIBER_CALLBACK void (*callback)(struct ucdrBuffer* ub)
+#include "Fedora/Broker.hpp"
 
+
+namespace Fedora {
 typedef struct SubscriberDetails {
   uint16_t id;
-  SUBSCRIBER_CALLBACK;
+  void (*callback)(struct ucdrBuffer* ub);
   const char* topicXml;
   const char* subscriberXml;
   const char* dataReaderXml;
@@ -31,14 +33,14 @@ typedef struct PublisherDetails {
 } PublisherDetails_t;
 
 
-class BrokerImpl : public Broker {
+class BrokerImpl : public Fedora::Broker {
 public:
   BrokerImpl(uint32_t id, bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, uint8_t *inputBuffer, uint32_t inBufferSize, const char* participant_xml);
 
   void initialize();
   uint16_t initPublisher(const char* topic_xml, const char* publisherXml, const char* dataWriter_xml);
   void registerPublisher(PublisherDetails details);
-  uint16_t initSubscriber(const char* topic_xml, const char* subscriberXml, const char* dataReader_xml, SUBSCRIBER_CALLBACK);
+  uint16_t initSubscriber(const char* topic_xml, const char* subscriberXml, const char* dataReader_xml, void (*callback)(struct ucdrBuffer* ub));
   void registerSubscriber(SubscriberDetails details);
   void prepPublish(uint16_t id, ucdrBuffer *serializedBuffer, uint32_t topicSize);
 
@@ -58,24 +60,26 @@ private:
   static bool onAgentFound(const TransportLocator* locator, void* args);
   
 private: //state, TODO split this into multiple classes
-  bool clientOnly; 
-  TransportLocator agent;
-  std::thread agentThread;
+  bool client_only_; 
+  TransportLocator agent_;
+  std::thread agent_thread_;
   
-  uxrObjectId participant_id; 
-  const char *participant_xml;
+  uxrObjectId participant_id_; 
+  const char *participant_xml_;
 
-  std::vector<SubscriberDetails> subscribers;
-  std::vector<PublisherDetails> publishers;
+  std::vector<SubscriberDetails> subscribers_;
+  std::vector<PublisherDetails> publishers_;
   
-  uxrUDPTransport transport;
-  uxrSession session;
-  uxrStreamId reliable_out;
-  uxrStreamId reliable_in;
-  uint8_t *outputBuffer, *inputBuffer;
-  uint32_t outputBufferSize, inputBufferSize;
-  uint16_t idIncramenter;
-  char agentIp[16];
-  char port[10];
-  uint32_t id;
+  uxrUDPTransport transport_;
+  uxrSession session_;
+  uxrStreamId reliable_out_;
+  uxrStreamId reliable_in_;
+  uint8_t *output_buffer_, *input_buffer_;
+  uint32_t output_buffer_size_, input_buffer_size_;
+  uint16_t id_incrament_;
+  char agent_ip_[16];
+  char port_[10];
+  uint32_t id_;
 };
+};
+#endif //FEDORA_BROKER_IMPL

@@ -1,0 +1,76 @@
+\documentclass[11pt]{article}
+\usepackage{fp}
+\usepackage{booktabs}
+\usepackage{ragged2e}
+\usepackage{longtable}
+\newcounter{cnt}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{letterpaper, margin=0.75in}
+
+\title{Fedora BOM}
+\author{Nathan Rose}
+\date{\today}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  pdfpagemode=FullScreen,
+}
+
+\setcounter{cnt}{0}
+\def\inc{\stepcounter{cnt}\thecnt}
+\gdef\TotalHT{0}
+\newcommand{\product}[5]{%
+\inc &#1 &\href{#5}{#4} &#2 &#3 &\FPmul\temp{#2}{#3}\FPround\temp{\temp}{2}\temp 
+%% Totalize
+\FPadd\total{\TotalHT}{\temp}%
+\FPround\total{\total}{2}%
+\global\let\TotalHT\total%
+\\ }
+\newcommand{\totalttc}{
+  \TotalHT  }
+
+\begin{document}
+\maketitle
+
+\section{BOM}
+\begin{longtable}{cp{4.2cm}rrrr}
+\toprule
+Item & Description & Seller & Price & Qty & Total \\
+\midrule
+\product{Pi4 4Gb}{55.00}{1}{Pi Shop}{https://www.pishop.us/product/raspberry-pi-4-model-b-4gb/?src=raspberrypi}
+\product{Pi4 4Gb}{55.00}{1}{Cana Kit}{https://www.canakit.com/raspberry-pi-4-4gb.html}
+\product{Pi4 4Gb}{55.00}{1}{CED}{https://chicagodist.com/products/raspberry-pi-4-model-b-4gb?src=raspberrypi}
+\product{Power Supply}{8.00}{3}{Pi Shop}{https://www.pishop.us/product/usb-c-power-supply-5-1v-3-0a-ul-listed-on-off-switch/}
+\product{Ethernet Switch}{13.50}{1}{Amazon}{https://www.amazon.com/NETGEAR-5-Port-Gigabit-Ethernet-Unmanaged/dp/B07S98YLHM/ref=asc_df_B07S98YLHM/?tag=\&linkCode=df0\&hvadid=366315306136\&hvpos=\&hvnetw=g\&hvrand=16681842210923765718\&hvpone=\&hvptwo=\&hvqmt=\&hvdev=c\&hvdvcmdl=\&hvlocint=\&hvlocphy=9011497\&hvtargid=pla-792849707490\&ref=\&adgrpid=75347436639\&th=1}
+\midrule
+    &&&&Total:& \totalttc\\
+\bottomrule
+\end{longtable}
+
+\section{Justifications}
+\subsection{Rasberry Pi4}
+The Rasberry pi offers a quick and painless method of testing the software on an ARM processor. This is necessary
+as the main processor for Katalyst Space Technologies is an ARM and in order to create a representative test, I
+would like to use the same processor family. That being stated the Pi2 v1.1 would be ideal due to the specific
+core type they use(Arm A7) is very similar to the A9 likely to be used by Katalyst, however due to the global
+chip shortage I could not locate any by a reputable supplier. The only Pi I could find by reputable suppliers
+were the Pi4b, which are still ARM A line so the test will be representative just not as close as initially
+planned.
+
+A rasberry Pi also supports lower level IO such as UART that I can use to demonstrate that this works over
+UART as well as ethernet.
+
+A note too that the three sellers are used as all of these sellers have a 1 pi per customer restriction and
+3 is the minimum I need to ensure my software works.
+
+\subsection{Ethernet switch}
+I need a small ethernet switch in order to test these messages sent over ethernet. I have enough annoyingly short
+ethernet cables in my room that I am MORE THAN HAPPY to donate to my project.
+
+\end{document}
+
+
+

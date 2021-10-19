@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "Fedora/Broker.hpp"
 #include <iostream>
 
 #include <unistd.h>
@@ -22,13 +21,15 @@ extern "C" {
 #include "Magnitude.h"
 #include <uxr/client/client.h>
 };
+
+#include "Fedora/Broker.hpp"
 #define STREAM_HISTORY  8
 #define BUFFER_SIZE     100* STREAM_HISTORY
 
 void on_topic(struct ucdrBuffer* ub) {
   magnitude topic;
   magnitude_deserialize_topic(ub, &topic);
-  std::cout << "Magnitude-----------: " <<  topic.val << std::endl;
+  std::cout << "Magnitude-----------: " <<  (float)(topic.val) << std::endl;
 }
 
 
@@ -76,7 +77,7 @@ int main(int args, char** argv) {
     "</data_reader>"
     "</dds>";
   
-  std::unique_ptr<Broker> broker(Broker::createBroker(0xabcdef12, false, outBuffer, BUFFER_SIZE, inBuffer, BUFFER_SIZE, participant_xml));
+  std::unique_ptr<Fedora::Broker> broker(Fedora::Broker::createBroker(0xabcdef12, false, outBuffer, BUFFER_SIZE, inBuffer, BUFFER_SIZE, participant_xml));
   broker->initialize();
   uint16_t id = broker->initPublisher(topic_xml, publisher_xml, datawriter_xml);
   uint16_t subId = broker->initSubscriber(magn_topic_xml, subscriber_xml, datareader_xml, &on_topic);
