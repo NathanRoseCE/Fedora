@@ -42,7 +42,7 @@ COPY ./src /usr/src/Fedora/src
 COPY ./Fedora /usr/src/Fedora/Fedora
 COPY ./CMakeLists.txt .
 RUN cmake . -B build
-RUN cd build && make
+RUN cd build && make && ctest --output-on-failure
 
 
 FROM ubuntu:latest AS production

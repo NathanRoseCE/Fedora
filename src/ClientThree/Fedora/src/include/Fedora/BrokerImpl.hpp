@@ -17,32 +17,22 @@ extern "C" {//libraries that dont play well with Cpp
 
 
 namespace Fedora {
-typedef struct SubscriberDetails {
-  uint16_t id;
-  void (*callback)(struct ucdrBuffer* ub);
-  const char* topicXml;
-  const char* subscriberXml;
-  const char* dataReaderXml;
-} SubcriberDetails_t;
-
-typedef struct PublisherDetails {
-  uint16_t id;
-  const char* topicXml;
-  const char* publisherXml;
-  const char* dataWriterXml;
-} PublisherDetails_t;
-
-
 class BrokerImpl : public Fedora::Broker {
 public:
   BrokerImpl(uint32_t id, bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, uint8_t *inputBuffer, uint32_t inBufferSize, const char* participant_xml);
+  const char* participantXml() const;
 
   void initialize();
-  uint16_t initPublisher(const char* topic_xml, const char* publisherXml, const char* dataWriter_xml);
+  uint16_t initPublisher(const char* topic_xml, const char* publisherXml, const char* dataWriter_xml, bool sync);
   void registerPublisher(PublisherDetails details);
-  uint16_t initSubscriber(const char* topic_xml, const char* subscriberXml, const char* dataReader_xml, void (*callback)(struct ucdrBuffer* ub));
+  uint16_t initSubscriber(const char* topic_xml, const char* subscriberXml, const char* dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub));
   void registerSubscriber(SubscriberDetails details);
   void prepPublish(uint16_t id, ucdrBuffer *serializedBuffer, uint32_t topicSize);
+  
+  Fedora::PublisherDetails_t getPublisher(uint16_t id) const;
+  Fedora::SubcriberDetails_t getSubscriber(uint16_t id) const;
+  void removePublisher(uint16_t id);
+  void removeSubscriber(uint16_t id);
 
   void runSession(int ms);
   void close();

@@ -1,4 +1,8 @@
 #include "Fedora/BrokerImpl.hpp"
+#include "Fedora/Broker.hpp"
+#include <iostream>
+#include <exception>
+#include <stdexcept>
 
 #define STREAM_HISTORY  8
 struct FindAgentArgs{
@@ -22,14 +26,16 @@ void Fedora::BrokerImpl::initialize() {
   connectToAgent();
 }
   
-uint16_t Fedora::BrokerImpl::initPublisher(const char* topic_xml, const char* publisher_xml, const char* data_writer_xml) {
+uint16_t Fedora::BrokerImpl::initPublisher(const char* topic_xml, const char* publisher_xml, const char* data_writer_xml, bool sync) {
   PublisherDetails publisher = {
     id_incrament_++,
     topic_xml,
     publisher_xml,
     data_writer_xml
   };
-  registerPublisher(publisher);
+  if(sync) {
+    registerPublisher(publisher);
+  }
   publishers_.push_back(publisher);
   std::cout << "Publisher created successfully: " << publisher.id << std::endl;
   return publisher.id;
@@ -58,8 +64,44 @@ void Fedora::BrokerImpl::registerPublisher(PublisherDetails details) {
 void Fedora::BrokerImpl::prepPublish(uint16_t id, ucdrBuffer *serialized_buffer, uint32_t topic_size) {
   uxr_prepare_output_stream(&session_, reliable_out_, uxr_object_id(id, UXR_DATAWRITER_ID), serialized_buffer, topic_size);
 }
-uint16_t Fedora::BrokerImpl::initSubscriber(const char* topic_xml, const char* subscriber_xml, const char* dataReader_xml, void (*callback)(struct ucdrBuffer* ub)) {
+Fedora::PublisherDetails_t Fedora::BrokerImpl::getPublisher(uint16_t id) const{
+  for(PublisherDetails_t pub : publishers_) {
+    if(pub.id == id) {
+      return pub;
+    }
+  }
+  throw std::invalid_argument("Publisher with id not present");
+}
+void Fedora::BrokerImpl::removePublisher(uint16_t id) {
+  auto new_end = std::remove_if(publishers_.begin(), publishers_.end(), [id] (PublisherDetails_t pub) {
+    return pub.id == id;
+  });
+  if(new_end == publishers_.end()) {
+    throw std::invalid_argument("Publisher with id not present");
+  }
+  publishers_.erase(new_end, publishers_.end());
+}
+void Fedora::BrokerImpl::removeSubscriber(uint16_t id) {
+  auto new_end = std::remove_if(subscribers_.begin(), subscribers_.end(), [id] (SubcriberDetails_t sub) {
+    return sub.id == id;
+  });
+  if(new_end == subscribers_.end()) {
+    throw std::invalid_argument("Subscriber with id not present");
+  }
+  subscribers_.erase(new_end, subscribers_.end());
   
+}
+Fedora::SubcriberDetails_t Fedora::BrokerImpl::getSubscriber(uint16_t id) const{
+  std::cout << "got here" << std::endl;
+  for(SubcriberDetails_t sub : subscribers_) {
+    if(sub.id == id) {
+      return sub;
+    }
+  }
+  throw std::invalid_argument("Subscriber with id not present");
+}
+
+uint16_t Fedora::BrokerImpl::initSubscriber(const char* topic_xml, const char* subscriber_xml, const char* dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub)) {
   SubscriberDetails subscriber = {
     id_incrament_++,
     callback, 
@@ -67,7 +109,9 @@ uint16_t Fedora::BrokerImpl::initSubscriber(const char* topic_xml, const char* s
     subscriber_xml,
     dataReader_xml
   };
-  registerSubscriber(subscriber);
+  if(sync) {
+    registerSubscriber(subscriber);
+  }
   subscribers_.push_back(subscriber);
   std::cout << "Subscriber created successfully: " << subscriber.id << std::endl;
   return subscriber.id;
@@ -228,4 +272,8 @@ void Fedora::BrokerImpl::subscribeCallback(uxrSession* session,
       sub.callback(ub);
     }
   }
+}
+
+const char* Fedora::BrokerImpl::participantXml() const {
+  return participant_xml_;
 }

@@ -79,9 +79,11 @@ int main(int args, char** argv) {
   
   std::unique_ptr<Fedora::Broker> broker(Fedora::Broker::createBroker(0xabcdef12, false, outBuffer, BUFFER_SIZE, inBuffer, BUFFER_SIZE, participant_xml));
   broker->initialize();
-  uint16_t id = broker->initPublisher(topic_xml, publisher_xml, datawriter_xml);
-  uint16_t subId = broker->initSubscriber(magn_topic_xml, subscriber_xml, datareader_xml, &on_topic);
+  uint16_t id = broker->initPublisher(topic_xml, publisher_xml, datawriter_xml, true);
+  uint16_t subId = broker->initSubscriber(magn_topic_xml, subscriber_xml, datareader_xml, true, &on_topic);
 
+  broker->getPublisher(id);
+  
   // Write topics
   uint32_t count = 0;
   float i = 0;
