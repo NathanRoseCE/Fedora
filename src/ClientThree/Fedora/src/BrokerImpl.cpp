@@ -18,17 +18,20 @@ Fedora::BrokerImpl::BrokerImpl(uint32_t id, bool clientOnly, uint8_t *outputBuff
   output_buffer_size_(outBufferSize),
   input_buffer_(inputBuffer),
   input_buffer_size_(inBufferSize),
-  participant_xml_(participant_xml),
   id_incrament_(1)
 {
+  strcpy(participant_xml_, participant_xml);
 }
 void Fedora::BrokerImpl::initialize() {
   connectToAgent();
 }
   
 uint16_t Fedora::BrokerImpl::initPublisher(const char* topic_xml, const char* publisher_xml, const char* data_writer_xml, bool sync) {
+  return initPublisher(topic_xml, publisher_xml, data_writer_xml, sync, id_incrament_++);
+}
+uint16_t Fedora::BrokerImpl::initPublisher(const char* topic_xml, const char* publisher_xml, const char* data_writer_xml, bool sync, uint16_t id) {
   PublisherDetails publisher = {
-    id_incrament_++,
+    id,
     topic_xml,
     publisher_xml,
     data_writer_xml
@@ -102,8 +105,11 @@ Fedora::SubcriberDetails_t Fedora::BrokerImpl::getSubscriber(uint16_t id) const{
 }
 
 uint16_t Fedora::BrokerImpl::initSubscriber(const char* topic_xml, const char* subscriber_xml, const char* dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub)) {
+  return initSubscriber(topic_xml, subscriber_xml, dataReader_xml, sync, callback, id_incrament_++);
+}
+uint16_t Fedora::BrokerImpl::initSubscriber(const char* topic_xml, const char* subscriber_xml, const char* dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub), uint16_t id) {
   SubscriberDetails subscriber = {
-    id_incrament_++,
+    id,
     callback, 
     topic_xml,
     subscriber_xml,
@@ -276,4 +282,8 @@ void Fedora::BrokerImpl::subscribeCallback(uxrSession* session,
 
 const char* Fedora::BrokerImpl::participantXml() const {
   return participant_xml_;
+}
+
+const uint32_t Fedora::BrokerImpl::participantId() const {
+  return id_;
 }

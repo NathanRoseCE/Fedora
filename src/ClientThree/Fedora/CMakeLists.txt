@@ -13,6 +13,7 @@ include(GoogleTest)
 
 find_package(microxrcedds_client REQUIRED)
 find_package(microxrcedds_agent REQUIRED)
+add_subdirectory(libs)
 
 # Set C++11
 include(CheckCXXCompilerFlag)
@@ -33,6 +34,7 @@ add_library(Fedora ${Fedora_src})
 target_include_directories(${PROJECT_NAME} PUBLIC include)
 target_include_directories(${PROJECT_NAME} PRIVATE src/include)
 target_link_libraries(${PROJECT_NAME} PRIVATE microxrcedds_agent microxrcedds_client $<$<C_COMPILER_ID:GNU>:-Wl,--gc-section,--no-export-dynamic>)
+target_link_libraries(${PROJECT_NAME} PUBLIC rapid_xml)
 
 if(MSVC OR MSVC_IDE)
   target_compile_options(${PROJECT_NAME} PRIVATE /wd4996)
@@ -48,6 +50,9 @@ add_executable(
   TestBroker
   "testing/TestBroker.cpp"
   )
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/config.xml
+  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources)
+
 target_link_libraries(
   TestBroker PUBLIC gtest_main Fedora
   )
