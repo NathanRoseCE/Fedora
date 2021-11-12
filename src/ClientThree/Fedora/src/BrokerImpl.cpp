@@ -11,7 +11,7 @@ struct FindAgentArgs{
 };
 
 
-Fedora::BrokerImpl::BrokerImpl(uint32_t id, bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, uint8_t *inputBuffer, uint32_t inBufferSize, const char* participant_xml) :
+Fedora::BrokerImpl::BrokerImpl(uint32_t id, bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, uint8_t *inputBuffer, uint32_t inBufferSize, std::string participant_xml) :
   id_(id),
   client_only_(clientOnly),
   output_buffer_(outputBuffer),
@@ -20,16 +20,17 @@ Fedora::BrokerImpl::BrokerImpl(uint32_t id, bool clientOnly, uint8_t *outputBuff
   input_buffer_size_(inBufferSize),
   id_incrament_(1)
 {
-  strcpy(participant_xml_, participant_xml);
+  participant_xml_ = participant_xml;
+  std::cout << "xml: " << participant_xml_ << std::endl;
 }
 void Fedora::BrokerImpl::initialize() {
   connectToAgent();
 }
   
-uint16_t Fedora::BrokerImpl::initPublisher(const char* topic_xml, const char* publisher_xml, const char* data_writer_xml, bool sync) {
+uint16_t Fedora::BrokerImpl::initPublisher(std::string topic_xml, std::string publisher_xml, std::string data_writer_xml, bool sync) {
   return initPublisher(topic_xml, publisher_xml, data_writer_xml, sync, id_incrament_++);
 }
-uint16_t Fedora::BrokerImpl::initPublisher(const char* topic_xml, const char* publisher_xml, const char* data_writer_xml, bool sync, uint16_t id) {
+uint16_t Fedora::BrokerImpl::initPublisher(std::string topic_xml, std::string publisher_xml, std::string data_writer_xml, bool sync, uint16_t id) {
   PublisherDetails publisher = {
     id,
     topic_xml,
@@ -46,13 +47,13 @@ uint16_t Fedora::BrokerImpl::initPublisher(const char* topic_xml, const char* pu
 void Fedora::BrokerImpl::registerPublisher(PublisherDetails details) {
   uint16_t topic_req = uxr_buffer_create_topic_xml(&session_, reliable_out_,
 						   uxr_object_id(details.id, UXR_TOPIC_ID), participant_id_,
-						   details.topicXml, UXR_REPLACE);
+						   details.topicXml.c_str(), UXR_REPLACE);
   uxrObjectId publisher_id = uxr_object_id(details.id, UXR_PUBLISHER_ID);
   uint16_t publisher_req = uxr_buffer_create_publisher_xml(&session_, reliable_out_, publisher_id,
-							   participant_id_, details.publisherXml, UXR_REPLACE);
+							   participant_id_, details.publisherXml.c_str(), UXR_REPLACE);
   uint16_t datawriter_req = uxr_buffer_create_datawriter_xml(&session_, reliable_out_, 
 							     uxr_object_id(details.id, UXR_DATAWRITER_ID),
-							     publisher_id, details.dataWriterXml, UXR_REPLACE);
+							     publisher_id, details.dataWriterXml.c_str(), UXR_REPLACE);
   int num_requests = 3;
   uint16_t requests[num_requests] = {topic_req, publisher_req, datawriter_req};
   uint8_t status[num_requests];
@@ -104,10 +105,10 @@ Fedora::SubcriberDetails_t Fedora::BrokerImpl::getSubscriber(uint16_t id) const{
   throw std::invalid_argument("Subscriber with id not present");
 }
 
-uint16_t Fedora::BrokerImpl::initSubscriber(const char* topic_xml, const char* subscriber_xml, const char* dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub)) {
+uint16_t Fedora::BrokerImpl::initSubscriber(std::string topic_xml, std::string subscriber_xml, std::string dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub)) {
   return initSubscriber(topic_xml, subscriber_xml, dataReader_xml, sync, callback, id_incrament_++);
 }
-uint16_t Fedora::BrokerImpl::initSubscriber(const char* topic_xml, const char* subscriber_xml, const char* dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub), uint16_t id) {
+uint16_t Fedora::BrokerImpl::initSubscriber(std::string topic_xml, std::string subscriber_xml, std::string dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub), uint16_t id) {
   SubscriberDetails subscriber = {
     id,
     callback, 
@@ -125,14 +126,15 @@ uint16_t Fedora::BrokerImpl::initSubscriber(const char* topic_xml, const char* s
 void Fedora::BrokerImpl::registerSubscriber(SubscriberDetails details) {
   uint16_t topic_req = uxr_buffer_create_topic_xml(&session_, reliable_out_,
 						   uxr_object_id(details.id, UXR_TOPIC_ID), participant_id_,
-						   details.topicXml, UXR_REPLACE);
+						   details.topicXml.c_str(), UXR_REPLACE);
   uxrObjectId subscriber_id = uxr_object_id(details.id, UXR_SUBSCRIBER_ID);
-  uint16_t subscriber_req = uxr_buffer_create_subscriber_xml(&session_, reliable_out_, subscriber_id, participant_id_, details.subscriberXml, UXR_REPLACE);
+  uint16_t subscriber_req = uxr_buffer_create_subscriber_xml(&session_, reliable_out_, subscriber_id, participant_id_, details.subscriberXml.c_str(), UXR_REPLACE);
   
   uxrObjectId datareader_id = uxr_object_id(details.id, UXR_DATAREADER_ID);
   uint16_t datareader_req = uxr_buffer_create_datareader_xml(&session_, reliable_out_,
 							     datareader_id,
-							     subscriber_id, details.dataReaderXml, UXR_REPLACE);
+							     subscriber_id, details.dataReaderXml.c_str(),
+                                                             UXR_REPLACE);
   int num_requests = 3;
   uint16_t requests[num_requests] = {topic_req, subscriber_req, datareader_req};
   uint8_t status[num_requests];
@@ -215,7 +217,7 @@ void Fedora::BrokerImpl::connectToAgent() {//TODO refactor, make actual exceptio
   //set up the participant
   participant_id_ = uxr_object_id(0x01, UXR_PARTICIPANT_ID);
   uint16_t participant_req = uxr_buffer_create_participant_xml(&session_, reliable_out_, participant_id_, 0,
-							       participant_xml_, UXR_REPLACE);
+							       participant_xml_.c_str(), UXR_REPLACE);
   uint8_t status;
   if (!uxr_run_session_until_all_status(&session_, 1000, &participant_req, &status, 1)) {
     std::cout << "Unable to create participant. Error: " << status << std::endl;
@@ -280,7 +282,8 @@ void Fedora::BrokerImpl::subscribeCallback(uxrSession* session,
   }
 }
 
-const char* Fedora::BrokerImpl::participantXml() const {
+std::string Fedora::BrokerImpl::participantXml() const {
+  std::cout << "xml-call: " << participant_xml_ << std::endl;
   return participant_xml_;
 }
 

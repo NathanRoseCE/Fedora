@@ -278,6 +278,7 @@ TEST(BROKER, createFromXML) {
 
   rapidxml::xml_document<> doc;
   rapidxml::xml_node<> *fedora = doc.allocate_node(rapidxml::node_element, "Fedora");
+  doc.append_node(fedora);
   fedora->append_attribute(doc.allocate_attribute("version", "1.0"));
   
   rapidxml::xml_node<> *broker = doc.allocate_node(rapidxml::node_element, "Broker");
@@ -298,6 +299,8 @@ TEST(BROKER, createFromXML) {
   participant->append_node(rtps);
   rapidxml::xml_node<> *name = doc.allocate_node(rapidxml::node_element, "name", "default_xrce_participant");
   rtps->append_node(name);
+  rapidxml::xml_node<> *publishers= doc.allocate_node(rapidxml::node_element, "Publishers");
+  fedora->append_node(publishers);
   
   
   uint8_t outBuffer[BUFFER_SIZE];
@@ -305,14 +308,95 @@ TEST(BROKER, createFromXML) {
   
   std::unique_ptr<Fedora::Broker> broker_obj(Fedora::Broker::createBroker(fedora, outBuffer, BUFFER_SIZE, inBuffer, BUFFER_SIZE));
   rapidxml::xml_document<> participant_xml_doc;
-  char test[BROKER_PARTICIPANT_BUFFER_SIZE];
-  strcpy(test, broker_obj->participantXml());
-  participant_xml_doc.parse<0>(test);
-  std::cout << participant_xml_doc;
+  std::string participant_string = broker_obj->participantXml();
+  participant_xml_doc.parse</*rapidxml::parse_non_destructive*/0>(const_cast<char *>(participant_string.c_str()));
   EXPECT_EQ(broker_obj->participantId(), 0xAAAABBBB);
-  
-  std::string part_name_actual(participant_xml_doc.first_node("dds")->first_node("participant")->first_node("rtps")->first_node("name")->value());
-  EXPECT_EQ(part_name_actual, "default_xrce_participant");
-  EXPECT_TRUE(false);
+
+  std::string part_name(participant_xml_doc.first_node("dds")->first_node("participant")->first_node("rtps")->first_node("name")->value());
+  EXPECT_EQ(part_name, "default_xrce_participant");
 }
 
+std::unique_ptr<rapidxml::xml_document<>> defaultCoreConfig() { 
+  std::unique_ptr<rapidxml::xml_document<>> doc(new rapidxml::xml_document<>());
+  rapidxml::xml_node<> *fedora = doc->allocate_node(rapidxml::node_element, "Fedora");
+  doc->append_node(fedora);
+  fedora->append_attribute(doc->allocate_attribute("version", "1.0"));
+  
+  rapidxml::xml_node<> *broker = doc->allocate_node(rapidxml::node_element, "Broker");
+  fedora->append_node(broker);
+  
+  rapidxml::xml_node<> *id = doc->allocate_node(rapidxml::node_element, "id", "0xAAAABBBB");
+  broker->append_node(id);
+  rapidxml::xml_node<> *client_only = doc->allocate_node(rapidxml::node_element, "clientOnly", "false");
+  broker->append_node(client_only);
+
+  rapidxml::xml_node<> *participant_xml = doc->allocate_node(rapidxml::node_element, "participantConfig");
+  broker->append_node(participant_xml);
+  rapidxml::xml_node<> *dds = doc->allocate_node(rapidxml::node_element, "dds");
+  participant_xml->append_node(dds);
+  rapidxml::xml_node<> *participant = doc->allocate_node(rapidxml::node_element, "participant");
+  dds->append_node(participant);
+  rapidxml::xml_node<> *rtps = doc->allocate_node(rapidxml::node_element, "rtps");
+  participant->append_node(rtps);
+  rapidxml::xml_node<> *name = doc->allocate_node(rapidxml::node_element, "name", "default_xrce_participant");
+  rtps->append_node(name);
+  rapidxml::xml_node<> *publishers= doc->allocate_node(rapidxml::node_element, "Publishers");
+  fedora->append_node(publishers);
+  
+  return doc;//dont have to use move
+}
+
+TEST(BROKER, createPublisherFromXML) {
+  std::unique_ptr<rapidxml::xml_document<>> doc = defaultCoreConfig();
+  rapidxml::xml_node<> *fedora = doc->first_node("Fedora");
+
+  rapidxml::xml_node<> *publishers= fedora->first_node("Publishers");
+  rapidxml::xml_node<> *publisher_one= doc->allocate_node(rapidxml::node_element, "Publisher");
+  publishers->append_node(publisher_one);
+  rapidxml::xml_node<> *publisher_one_id = doc->allocate_node(rapidxml::node_element, "id", "1");
+  publisher_one->append_node(publisher_one_id);
+
+  //publisher config
+  rapidxml::xml_node<> *publisher_one_pub_config = doc->allocate_node(rapidxml::node_element, "PublisherConfig");
+  publisher_one->append_node(publisher_one_pub_config);
+
+  //data writer config
+  rapidxml::xml_node<> *publisher_one_datawriter = doc->allocate_node(rapidxml::node_element, "DataWriterConfig");
+  publisher_one->append_node(publisher_one_datawriter);
+  rapidxml::xml_node<> *publisher_one_datawriter_dds = doc->allocate_node(rapidxml::node_element, "dds");
+  publisher_one_datawriter->append_node(publisher_one_datawriter_dds);
+  rapidxml::xml_node<> *publisher_one_dds_datawriter = doc->allocate_node(rapidxml::node_element, "data_writer");
+  publisher_one_datawriter_dds->append_node(publisher_one_dds_datawriter);
+  rapidxml::xml_node<> *publisher_one_data_topic = doc->allocate_node(rapidxml::node_element, "topic");
+  publisher_one_dds_datawriter->append_node(publisher_one_data_topic);
+  rapidxml::xml_node<> *publisher_one_data_topic_kind = doc->allocate_node(rapidxml::node_element, "kind", "NO_KEY");
+  publisher_one_data_topic->append_node(publisher_one_data_topic_kind);
+  rapidxml::xml_node<> *publisher_one_data_topic_name = doc->allocate_node(rapidxml::node_element, "name", "vectorTopic");
+  publisher_one_data_topic->append_node(publisher_one_data_topic_name);
+  rapidxml::xml_node<> *publisher_one_data_topic_dataType = doc->allocate_node(rapidxml::node_element, "dataType", "Vector");
+  publisher_one_data_topic->append_node(publisher_one_data_topic_dataType);
+
+  //topic config
+  rapidxml::xml_node<> *publisher_one_topic_config = doc->allocate_node(rapidxml::node_element, "TopicConfig");
+  publisher_one->append_node(publisher_one_topic_config);
+  rapidxml::xml_node<> *publisher_one_topic_dds = doc->allocate_node(rapidxml::node_element, "dds");
+  publisher_one_topic_config->append_node(publisher_one_topic_dds);
+  rapidxml::xml_node<> *publisher_one_topic_topic = doc->allocate_node(rapidxml::node_element, "topic");
+  publisher_one_topic_dds->append_node(publisher_one_topic_topic);
+  rapidxml::xml_node<> *publisher_one_topic_name = doc->allocate_node(rapidxml::node_element, "name", "vectorTopic");
+  publisher_one_topic_topic->append_node(publisher_one_topic_name);
+  rapidxml::xml_node<> *publisher_one_topic_dataType = doc->allocate_node(rapidxml::node_element, "dataType", "Vector");
+  publisher_one_topic_topic->append_node(publisher_one_topic_dataType);
+
+
+  uint8_t outBuffer[BUFFER_SIZE];
+  uint8_t inBuffer[BUFFER_SIZE];
+  std::unique_ptr<Fedora::Broker> broker_obj(Fedora::Broker::createBroker(fedora, outBuffer, BUFFER_SIZE, inBuffer, BUFFER_SIZE));
+
+  Fedora::PublisherDetails_t pub_details = broker_obj->getPublisher(1);
+  rapidxml::xml_document<> topic_xml;
+  topic_xml.parse<0>(const_cast<char *>(pub_details.topicXml.c_str()));
+  std::string topic_name = topic_xml.first_node("dds")->first_node("topic")->first_node("name")->value();
+  EXPECT_EQ("vectorTopic", (std::string)(topic_xml.first_node("dds")->first_node("topic")->first_node("name")->value()));
+  EXPECT_EQ("Vector", (std::string)(topic_xml.first_node("dds")->first_node("topic")->first_node("dataType")->value()));
+}

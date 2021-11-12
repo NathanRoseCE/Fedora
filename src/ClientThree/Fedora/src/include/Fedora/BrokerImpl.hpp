@@ -19,14 +19,14 @@ extern "C" {//libraries that dont play well with Cpp
 namespace Fedora {
 class BrokerImpl : public Fedora::Broker {
 public:
-  BrokerImpl(uint32_t id, bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, uint8_t *inputBuffer, uint32_t inBufferSize, const char* participant_xml);
+  BrokerImpl(uint32_t id, bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, uint8_t *inputBuffer, uint32_t inBufferSize, std::string participant_xml);
   void initialize();
   
-  uint16_t initPublisher(const char* topic_xml, const char* publisherXml, const char* dataWriter_xml, bool sync, uint16_t id);
-  uint16_t initPublisher(const char* topic_xml, const char* publisherXml, const char* dataWriter_xml, bool sync);
+  uint16_t initPublisher(std::string topic_xml, std::string publisherXml, std::string dataWriter_xml, bool sync, uint16_t id);
+  uint16_t initPublisher(std::string topic_xml, std::string publisherXml, std::string dataWriter_xml, bool sync);
   
-  uint16_t initSubscriber(const char* topic_xml, const char* subscriberXml, const char* dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub));
-  uint16_t initSubscriber(const char* topic_xml, const char* subscriberXml, const char* dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub), uint16_t id);
+  uint16_t initSubscriber(std::string topic_xml, std::string subscriberXml, std::string dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub));
+  uint16_t initSubscriber(std::string topic_xml, std::string subscriberXml, std::string dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub), uint16_t id);
   
   void registerPublisher(PublisherDetails details);
   void registerSubscriber(SubscriberDetails details);
@@ -41,7 +41,7 @@ public:
   
   Fedora::PublisherDetails_t getPublisher(uint16_t id) const;
   Fedora::SubcriberDetails_t getSubscriber(uint16_t id) const;
-  const char* participantXml() const;
+  std::string participantXml() const;
   const uint32_t participantId() const;
  private:
   bool findAgent();
@@ -61,7 +61,7 @@ public:
   std::thread agent_thread_;
   
   uxrObjectId participant_id_; 
-  char participant_xml_[BROKER_PARTICIPANT_BUFFER_SIZE];
+  std::string participant_xml_;
 
   std::vector<SubscriberDetails> subscribers_;
   std::vector<PublisherDetails> publishers_;

@@ -3,14 +3,22 @@
 #include "rapidxml_utils.hpp"
 #include "rapidxml_print.hpp"
 #include <sstream>
+#include <string>
 #include <exception>
 #include <stdexcept>
 
-Fedora::Broker* Fedora::Broker::createBroker(uint32_t id, bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, uint8_t *inputBuffer, uint32_t inBufferSize, const char* participant_xml) {
+Fedora::Broker* Fedora::Broker::createBroker(uint32_t id, bool clientOnly, uint8_t *outputBuffer, uint32_t outBufferSize, uint8_t *inputBuffer, uint32_t inBufferSize, std::string participant_xml) {
   return new BrokerImpl(id, clientOnly, outputBuffer, outBufferSize, inputBuffer, inBufferSize, participant_xml);
 }
 
-
+std::string node_str(rapidxml::xml_node<> *xml_node) {
+  if(xml_node->first_node()) {
+    std::stringstream ss;
+    ss << *(xml_node->first_node());
+    return ss.str();
+  }
+  return "";
+}
 Fedora::Broker* Fedora::Broker::createBroker(rapidxml::xml_node<> *xml_config, uint8_t *output_buffer, uint32_t out_buffer_size, uint8_t *input_buffer, uint32_t in_buffer_size) {
   std::string version = xml_config->first_attribute("version")->value();
   if(version != "1.0") {
@@ -29,5 +37,16 @@ Fedora::Broker* Fedora::Broker::createBroker(rapidxml::xml_node<> *xml_config, u
   char participant_xml[100];
   strcpy(participant_xml, temp.c_str());
   //  std::cout << "participant config:" << participant_xml << std::endl;
-  return new BrokerImpl(broker_id, client_only, output_buffer, out_buffer_size, input_buffer, in_buffer_size, participant_xml);
+  Fedora::Broker* broker = new BrokerImpl(broker_id, client_only, output_buffer, out_buffer_size, input_buffer, in_buffer_size, participant_xml);
+
+  rapidxml::xml_node<> *publishers = xml_config->first_node("Publishers");
+  for (rapidxml::xml_node<> *publisher = publishers->first_node(); publisher; publisher = publisher->next_sibling()) {
+    std::string publisher_xml = node_str(publisher->first_node("PublisherConfig"));
+    std::string datawriter_xml = node_str(publisher->first_node("DataWriterConfig"));
+    std::string topic_xml = node_str(publisher->first_node("TopicConfig"));
+    
+    uint16_t id = std::stoi(publisher->first_node("id")->value());
+    broker->initPublisher(topic_xml, publisher_xml, datawriter_xml, false, id);
+  }
+  return broker;
 }
