@@ -43,6 +43,8 @@ public:
   Fedora::SubcriberDetails_t getSubscriber(uint16_t id) const;
   std::string participantXml() const;
   const uint32_t participantId() const;
+  
+  void registerCallback(uint16_t id, void (*callback)(struct ucdrBuffer* ub));
  private:
   bool findAgent();
   void connectToAgent(); // will create an agent if not clientOnly

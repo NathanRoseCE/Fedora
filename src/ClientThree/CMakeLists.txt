@@ -14,6 +14,8 @@ if(MSVC OR MSVC_IDE)
   target_compile_options(${PROJECT_NAME} PRIVATE /wd4996)
 endif()
 
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/config.xml
+  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/resources)
 set_target_properties(${PROJECT_NAME} PROPERTIES
   C_STANDARD 99
   C_STANDARD_REQUIRED YES

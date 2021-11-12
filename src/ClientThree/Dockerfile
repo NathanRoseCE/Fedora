@@ -38,9 +38,10 @@ COPY ./idl /usr/src/Fedora/idl
 RUN /usr/src/ddsXrceGen/scripts/microxrceddsgen idl/*.idl -d ./messages/
 
 #Build software
+COPY ./CMakeLists.txt .
 COPY ./src /usr/src/Fedora/src
 COPY ./Fedora /usr/src/Fedora/Fedora
-COPY ./CMakeLists.txt .
+COPY ./resources /usr/src/Fedora/resources
 RUN cmake . -B build
 RUN cd build && make
 RUN cd build && ctest --output-on-failure
@@ -51,6 +52,7 @@ FROM ubuntu:latest AS production
 RUN mkdir /usr/src/Fedora/build -p
 WORKDIR /usr/src/Fedora
 COPY --from=builder /usr/src/Fedora/build /usr/src/Fedora/build
+COPY --from=builder /usr/src/Fedora/resources /usr/src/Fedora/resources
 COPY --from=builder /usr/local/lib/. /usr/local/lib/.
 RUN ldconfig /usr/local/lib/
 COPY ./run.sh .

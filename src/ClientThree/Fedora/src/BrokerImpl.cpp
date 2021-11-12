@@ -277,16 +277,28 @@ void Fedora::BrokerImpl::subscribeCallback(uxrSession* session,
 			       void* args) {
   for(SubscriberDetails sub : ((BrokerImpl*)args)->subscribers_) {
     if( object_id.id == sub.id ) {
-      sub.callback(ub);
+      if(sub.callback != nullptr) {
+        sub.callback(ub);
+      }
+      else {
+        std::cout << "callback not registered" << std::endl;
+      }
     }
   }
 }
 
 std::string Fedora::BrokerImpl::participantXml() const {
-  std::cout << "xml-call: " << participant_xml_ << std::endl;
   return participant_xml_;
 }
 
 const uint32_t Fedora::BrokerImpl::participantId() const {
   return id_;
+}
+
+void Fedora::BrokerImpl::registerCallback(uint16_t id, void (*callback)(struct ucdrBuffer* ub)) {
+  for(SubscriberDetails& sub : subscribers_) {
+    if(sub.id == id) {
+      sub.callback = callback;
+    }
+  }
 }

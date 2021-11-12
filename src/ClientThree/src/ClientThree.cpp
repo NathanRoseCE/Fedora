@@ -13,9 +13,12 @@
 // limitations under the License.
 
 #include <iostream>
-
 #include <unistd.h>
 #include <memory>
+
+#include "rapidxml.hpp"
+#include "rapidxml_utils.hpp"
+#include "rapidxml_print.hpp"
 extern "C" {
 #include "Vector.h"
 #include "Magnitude.h"
@@ -23,6 +26,7 @@ extern "C" {
 };
 
 #include "Fedora/Broker.hpp"
+
 #define STREAM_HISTORY  8
 #define BUFFER_SIZE     100* STREAM_HISTORY
 
@@ -35,54 +39,18 @@ void on_topic(struct ucdrBuffer* ub) {
 
 
 int main(int args, char** argv) {
-  const char* participant_xml = "<dds>"
-    "<participant>"
-    "<rtps>"
-    "<name>default_xrce_participant</name>"
-    "</rtps>"
-    "</participant>"
-    "</dds>";
+  
+  rapidxml::file<> xmlFile("resources/config.xml"); // Default template is char
+  rapidxml::xml_document<> doc;
+  doc.parse<0>(xmlFile.data());
+
   uint8_t outBuffer[BUFFER_SIZE];
   uint8_t inBuffer[BUFFER_SIZE];
-  const char* topic_xml = "<dds>"
-    "<topic>"
-    "<name>vectorTopic</name>"
-    "<dataType>Vector</dataType>"
-    "</topic>"
-    "</dds>";
-  const char* publisher_xml = "";
-  const char* datawriter_xml = "<dds>"
-    "<data_writer>"
-    "<topic>"
-    "<kind>NO_KEY</kind>"
-    "<name>vectorTopic</name>"
-    "<dataType>Vector</dataType>"
-    "</topic>"
-    "</data_writer>"
-    "</dds>";
-  const char* magn_topic_xml = "<dds>"
-    "<topic>"
-    "<name>vectorMagnitude</name>"
-    "<dataType>magnitude</dataType>"
-    "</topic>"
-    "</dds>";
-  const char* subscriber_xml = "";
-  const char* datareader_xml =  "<dds>"
-    "<data_reader>"
-    "<topic>"
-    "<kind>NO_KEY</kind>"
-    "<name>vectorMagnitude</name>"
-    "<dataType>magnitude</dataType>"
-    "</topic>"
-    "</data_reader>"
-    "</dds>";
-  
-  std::unique_ptr<Fedora::Broker> broker(Fedora::Broker::createBroker(0xabcdef12, false, outBuffer, BUFFER_SIZE, inBuffer, BUFFER_SIZE, participant_xml));
+  int pub_id = 1;
+  std::unique_ptr<Fedora::Broker> broker(Fedora::Broker::createBroker(doc.first_node("Fedora"), outBuffer, BUFFER_SIZE, inBuffer, BUFFER_SIZE));
+  broker->registerCallback(1, &on_topic);
   broker->initialize();
-  uint16_t id = broker->initPublisher(topic_xml, publisher_xml, datawriter_xml, true);
-  uint16_t subId = broker->initSubscriber(magn_topic_xml, subscriber_xml, datareader_xml, true, &on_topic);
 
-  broker->getPublisher(id);
   
   // Write topics
   uint32_t count = 0;
@@ -95,7 +63,7 @@ int main(int args, char** argv) {
 
     ucdrBuffer ub;
     uint32_t topic_size = Vector_size_of_topic(&topic, 0);
-    broker->prepPublish(id, &ub, topic_size);
+    broker->prepPublish(pub_id, &ub, topic_size);
     Vector_serialize_topic(&ub, &topic);
     
     broker->runSession(1000);

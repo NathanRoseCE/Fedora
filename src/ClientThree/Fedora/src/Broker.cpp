@@ -48,5 +48,21 @@ Fedora::Broker* Fedora::Broker::createBroker(rapidxml::xml_node<> *xml_config, u
     uint16_t id = std::stoi(publisher->first_node("id")->value());
     broker->initPublisher(topic_xml, publisher_xml, datawriter_xml, false, id);
   }
+
+  
+  rapidxml::xml_node<> *subscribers = xml_config->first_node("Subscribers");
+  std::cout << "Got to subscribers" << std::endl;
+  std::cout << "ptr: " << subscribers << std::endl;
+  for (rapidxml::xml_node<> *subscriber = subscribers->first_node(); subscriber; subscriber = subscriber->next_sibling()) {
+    std::string subscriber_xml = node_str(subscriber->first_node("SubscriberConfig"));
+    std::string datareader_xml = node_str(subscriber->first_node("DataReaderConfig"));
+    std::string topic_xml = node_str(subscriber->first_node("TopicConfig"));
+    
+    uint16_t id = std::stoi(subscriber->first_node("id")->value());
+    broker->initSubscriber(topic_xml, subscriber_xml, datareader_xml, false, nullptr, id);
+  }
+  std::cout << "finished " << std::endl;
   return broker;
+
+  
 }

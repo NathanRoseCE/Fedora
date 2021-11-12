@@ -68,6 +68,8 @@ class Broker {
   virtual uint16_t initSubscriber(std::string topic_xml, std::string subscriberXml, std::string dataReader_xml, bool sync, void (*callback)(struct ucdrBuffer* ub), uint16_t id) = 0;
   virtual SubcriberDetails_t getSubscriber(uint16_t id) const = 0;
   virtual void removeSubscriber(uint16_t id) = 0;
+
+  virtual void registerCallback(uint16_t id, void (*callback)(struct ucdrBuffer* ub)) = 0;
   
   virtual void runSession(int ms) = 0;
   virtual void close() = 0;
